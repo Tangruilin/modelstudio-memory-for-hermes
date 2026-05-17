@@ -407,6 +407,7 @@ You have access to Bailian long-term memory. Use these tools to:
         payload = {
             "user_id": self._user_id,
             "messages": messages,
+            "source": "hermes",
         }
         return self._make_request("POST", "/add", data=payload)
 
@@ -428,9 +429,10 @@ You have access to Bailian long-term memory. Use these tools to:
         """
         payload = {
             "user_id": self._user_id,
-            "query": query,
+            "messages": [{"role": "user", "content": query}],
             "top_k": top_k,
             "min_score": min_score,
+            "source": "hermes",
         }
         response = self._make_request("POST", "/memory_nodes/search", data=payload)
         return cast(list[dict[str, Any]], response.get("memory_nodes", []))
