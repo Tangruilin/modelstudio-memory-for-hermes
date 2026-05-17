@@ -1,0 +1,38 @@
+name: bailian
+description: 阿里云百炼长期记忆服务
+version: 1.0.0
+author: reilly
+license: MIT
+
+# Hooks that this provider implements
+hooks:
+  - initialize
+  - system_prompt_block
+  - prefetch
+  - sync_turn
+  - get_tool_schemas
+  - handle_tool_call
+  - shutdown
+  - on_session_switch
+  - on_session_end
+  - get_config_schema
+  - save_config
+
+# Required environment variables
+env_vars:
+  - DASHSCOPE_API_KEY
+
+# Optional environment variables
+optional_env_vars:
+  - BAILIAN_BASE_URL
+  - BAILIAN_USER_ID
+  - BAILIAN_AUTO_CAPTURE
+  - BAILIAN_AUTO_RECALL
+  - BAILIAN_TOP_K
+  - BAILIAN_MIN_SCORE
+
+# API rate limits
+rate_limits:
+  add_memory: 120/min
+  search_memory: 300/min
+  total: 3000/min
