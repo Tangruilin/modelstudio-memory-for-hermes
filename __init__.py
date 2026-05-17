@@ -573,13 +573,26 @@ You have access to Bailian long-term memory. Use these tools to:
         config_path = pathlib.Path(hermes_home) / "memory" / "bailian.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write config values
+        # Write config values with proper type coercion
+        auto_capture = values.get("auto_capture", True)
+        if isinstance(auto_capture, str):
+            auto_capture = auto_capture.lower() in ("true", "1", "yes")
+        auto_recall = values.get("auto_recall", True)
+        if isinstance(auto_recall, str):
+            auto_recall = auto_recall.lower() in ("true", "1", "yes")
+        top_k = values.get("top_k", 5)
+        if isinstance(top_k, str):
+            top_k = int(top_k)
+        min_score = values.get("min_score", 0.0)
+        if isinstance(min_score, str):
+            min_score = float(min_score)
+
         config = {
-            "user_id": values.get("user_id", ""),
-            "auto_capture": values.get("auto_capture", True),
-            "auto_recall": values.get("auto_recall", True),
-            "top_k": values.get("top_k", 5),
-            "min_score": values.get("min_score", 0.0),
+            "user_id": str(values.get("user_id", "")),
+            "auto_capture": auto_capture,
+            "auto_recall": auto_recall,
+            "top_k": top_k,
+            "min_score": min_score,
         }
 
         with open(config_path, "w", encoding="utf-8") as f:
