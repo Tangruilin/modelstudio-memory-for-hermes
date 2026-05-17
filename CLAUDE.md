@@ -3,6 +3,7 @@
 Hermes Agent memory plugin for Alibaba Cloud Bailian (百炼).
 
 ## Architecture
+
 - **Python** plugin for Hermes Agent (NOT TypeScript/JS)
 - Plugin type: Memory Provider
 - Extends `MemoryProvider` from `agent/memory_provider.py`
@@ -10,6 +11,7 @@ Hermes Agent memory plugin for Alibaba Cloud Bailian (百炼).
 - Target install path: `plugins/memory/bailian/`
 
 ## Plugin Structure
+
 ```
 plugins/memory/bailian/
 ├── __init__.py      # BailianMemoryProvider class + register() entry point
@@ -18,12 +20,14 @@ plugins/memory/bailian/
 ```
 
 ## Key Constraints
+
 - Bailian API: `https://dashscope.aliyuncs.com/api/v2/apps/memory`
 - Auth: DashScope API Key (`sk-xxx` format)
 - Rate limits: 120 writes/min, 300 searches/min, 3000 total/min
 - NOT Mem0-compatible — implements custom REST client
 
 ## Required Methods (MemoryProvider ABC)
+
 - `name` → `"bailian"`
 - `is_available()` → check DASHSCOPE_API_KEY in env
 - `initialize(session_id, **kwargs)` → set up API client
@@ -33,15 +37,23 @@ plugins/memory/bailian/
 - Optional: `prefetch()`, `sync_turn()`, `system_prompt_block()`, etc.
 
 ## Reference
+
 - Hermes MemoryProvider ABC: `agent/memory_provider.py` in hermes-agent source
-- Bailian API docs: https://help.aliyun.com/zh/model-studio/modelstudio-memory-for-openclaw
-- OpenClaw plugin source (for reference): https://github.com/modelstudio/modelstudio-memory-for-openclaw
+- Bailian API docs: <https://help.aliyun.com/zh/model-studio/modelstudio-memory-for-openclaw>
+- OpenClaw plugin source (for reference): <https://github.com/modelstudio/modelstudio-memory-for-openclaw>
 
 ## Commands
-- Test: `python -c "from plugins.memory.bailian import BailianMemoryProvider; print('OK')"`
+
+- Install deps: `make install` or `uv sync`
+- Format: `make format`
+- Check (ruff + mypy): `make check`
+- Test: `make test`
+- Pyright (requires npx): `make pyright-check`
+- Quick import test: `python -c "from plugins.memory.bailian import BailianMemoryProvider; print('OK')"`
 - After changes: `git add -A && git commit -m "..." && git push`
 
 ## Style
+
 - Python 3.11+
 - Type hints on all functions
 - Docstrings in Google style
