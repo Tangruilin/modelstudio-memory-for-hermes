@@ -16,10 +16,7 @@ from typing import Any, cast
 
 import requests
 
-try:
-    from agent.memory_provider import MemoryProvider
-except ImportError:
-    MemoryProvider = object  # type: ignore
+from agent.memory_provider import MemoryProvider
 
 logger = logging.getLogger(__name__)
 

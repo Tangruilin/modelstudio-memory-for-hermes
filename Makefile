@@ -1,4 +1,7 @@
-.PHONY: install sync mypy-check pyright-check ruff-check pylint-check format check test
+.PHONY: install sync mypy-check pyright-check ruff-check format check test
+
+HERMES_SRC := /Users/reilly/.hermes/hermes-agent
+export PYTHONPATH := $(HERMES_SRC):$(PYTHONPATH)
 
 # 安装依赖
 install:

@@ -29,6 +29,7 @@ quote-style = "double"
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 reportUnknownArgumentType = false
+extraPaths = ["/Users/reilly/.hermes/hermes-agent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
