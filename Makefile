@@ -26,7 +26,7 @@ ruff-check:
 
 # pylint 检查（运行时需要 hermes-agent）
 pylint-check:
-	PYTHONPATH=~/.hermes/hermes-agent uv run pylint __init__.py tests/ --disable=W0212,R0902,R0903,C0103
+	PYTHONPATH=~/.hermes/hermes-agent uv run pylint __init__.py tests/ --disable=W0212,R0902,R0903,R0904,C0103
 
 # 运行所有检查
 check: ruff-check mypy-check pylint-check

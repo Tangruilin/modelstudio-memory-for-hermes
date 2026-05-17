@@ -83,32 +83,63 @@ class BailianMemoryProvider(MemoryProvider):
         self._session_id = session_id
         self._api_key = os.environ.get("DASHSCOPE_API_KEY")
 
-        # Extract user_id from kwargs or use session_id as fallback
-        user_id = kwargs.get("user_id")
-        if user_id:
-            self._user_id = user_id
-        else:
-            # Use agent_identity + session_id for per-profile scoping
-            identity = kwargs.get("agent_identity", "default")
-            self._user_id = f"{identity}_{session_id[:8]}"
-
-        # Load optional config from environment
-        self._base_url = os.environ.get(
-            "BAILIAN_BASE_URL", BASE_URL
-        )
-        self._auto_capture = os.environ.get(
-            "BAILIAN_AUTO_CAPTURE", "true"
-        ).lower() in ("true", "1", "yes")
-        self._auto_recall = os.environ.get(
-            "BAILIAN_AUTO_RECALL", "true"
-        ).lower() in ("true", "1", "yes")
-        self._top_k = int(os.environ.get("BAILIAN_TOP_K", "5"))
-        self._min_score = float(os.environ.get("BAILIAN_MIN_SCORE", "0.0"))
-
+        # Check API key first
         if not self._api_key:
             raise ValueError(
                 "DASHSCOPE_API_KEY environment variable is required"
             )
+
+        # Load saved config from file (if exists)
+        hermes_home = kwargs.get("hermes_home", "")
+        config: dict[str, Any] = {}
+        if hermes_home:
+            config_path = pathlib.Path(hermes_home) / "memory" / "bailian.json"
+            if config_path.exists():
+                try:
+                    with open(config_path, encoding="utf-8") as f:
+                        config = json.load(f)
+                except (json.JSONDecodeError, OSError):
+                    logger.warning("Failed to load config from %s", config_path)
+
+        # Priority: kwargs > env var > config file
+        user_id = (
+            kwargs.get("user_id")
+            or os.environ.get("BAILIAN_USER_ID")
+            or config.get("user_id")
+        )
+        if user_id:
+            self._user_id = user_id
+        else:
+            raise ValueError(
+                "\n\n"
+                "╔════════════════════════════════════════════════════════╗\n"
+                "║  ERROR: user_id is required                            ║\n"
+                "║                                                        ║\n"
+                "║  Provide user_id via kwargs, BAILIAN_USER_ID env,     ║\n"
+                "║  or run 'hermes memory setup' to configure.            ║\n"
+                "╚════════════════════════════════════════════════════════╝\n"
+            )
+
+        # Load optional config with priority: env var > config file > default
+        self._base_url = os.environ.get("BAILIAN_BASE_URL", config.get("base_url", BASE_URL))
+
+        auto_capture_env = os.environ.get("BAILIAN_AUTO_CAPTURE")
+        if auto_capture_env:
+            self._auto_capture = auto_capture_env.lower() in ("true", "1", "yes")
+        else:
+            self._auto_capture = config.get("auto_capture", True)
+
+        auto_recall_env = os.environ.get("BAILIAN_AUTO_RECALL")
+        if auto_recall_env:
+            self._auto_recall = auto_recall_env.lower() in ("true", "1", "yes")
+        else:
+            self._auto_recall = config.get("auto_recall", True)
+
+        top_k_env = os.environ.get("BAILIAN_TOP_K")
+        self._top_k = int(top_k_env) if top_k_env else config.get("top_k", 5)
+
+        min_score_env = os.environ.get("BAILIAN_MIN_SCORE")
+        self._min_score = float(min_score_env) if min_score_env else config.get("min_score", 0.0)
 
         logger.info(
             "BailianMemoryProvider initialized for user=%s", self._user_id

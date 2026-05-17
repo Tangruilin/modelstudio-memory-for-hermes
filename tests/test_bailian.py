@@ -48,13 +48,44 @@ class TestBailianMemoryProvider:
             with pytest.raises(ValueError, match="DASHSCOPE_API_KEY"):
                 provider.initialize("session-123")
 
-    def test_initialize_generates_user_id_from_identity(self) -> None:
-        """Test user_id generation from agent_identity."""
+    def test_initialize_with_user_id_from_env(self) -> None:
+        """Test user_id from BAILIAN_USER_ID environment variable."""
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "env-user"},
+        ):
+            provider = bailian.BailianMemoryProvider()
+            provider.initialize("session-123")
+            assert provider._user_id == "env-user"
+
+    def test_initialize_kwargs_overrides_env_user_id(self) -> None:
+        """Test kwargs user_id overrides BAILIAN_USER_ID env var."""
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "env-user"},
+        ):
+            provider = bailian.BailianMemoryProvider()
+            provider.initialize("session-123", user_id="kwargs-user")
+            assert provider._user_id == "kwargs-user"
+
+    def test_initialize_without_user_id_raises(self) -> None:
+        """Test initialize raises ValueError without user_id."""
         with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
             provider = bailian.BailianMemoryProvider()
-            provider.initialize("session-abc12345", agent_identity="hermes")
-            # session-abc12345[:8] = "session-" (8 chars)
-            assert provider._user_id == "hermes_session-"
+            with pytest.raises(ValueError, match="user_id is required"):
+                provider.initialize("session-123")
+
+    def test_initialize_user_id_from_config_file(self, tmp_path: Any) -> None:
+        """Test user_id loaded from config file."""
+        config_file = tmp_path / "memory" / "bailian.json"
+        config_file.parent.mkdir(parents=True)
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump({"user_id": "config-user"}, f)
+
+        with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
+            provider = bailian.BailianMemoryProvider()
+            provider.initialize("session-123", hermes_home=str(tmp_path))
+            assert provider._user_id == "config-user"
 
     def test_system_prompt_block(self) -> None:
         """Test system_prompt_block returns expected content."""
@@ -97,7 +128,10 @@ class TestBailianMemoryProvider:
 
     def test_handle_add_memory_empty_content(self) -> None:
         """Test add_memory with empty content returns error."""
-        with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "test-user"},
+        ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
             result = json.loads(provider.handle_tool_call("bailian_add_memory", {}))
@@ -105,7 +139,10 @@ class TestBailianMemoryProvider:
 
     def test_handle_search_memory_empty_query(self) -> None:
         """Test search_memory with empty query returns error."""
-        with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "test-user"},
+        ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
             result = json.loads(provider.handle_tool_call("bailian_search_memory", {}))
@@ -113,7 +150,10 @@ class TestBailianMemoryProvider:
 
     def test_handle_delete_memory_empty_id(self) -> None:
         """Test delete_memory with empty ID returns error."""
-        with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "test-user"},
+        ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
             result = json.loads(provider.handle_tool_call("bailian_delete_memory", {}))
@@ -123,7 +163,11 @@ class TestBailianMemoryProvider:
         """Test prefetch returns empty when auto_recall is False."""
         with mock.patch.dict(
             os.environ,
-            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_AUTO_RECALL": "false"},
+            {
+                "DASHSCOPE_API_KEY": "sk-test",
+                "BAILIAN_USER_ID": "test-user",
+                "BAILIAN_AUTO_RECALL": "false",
+            },
         ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
@@ -134,7 +178,11 @@ class TestBailianMemoryProvider:
         """Test sync_turn does nothing when auto_capture is False."""
         with mock.patch.dict(
             os.environ,
-            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_AUTO_CAPTURE": "false"},
+            {
+                "DASHSCOPE_API_KEY": "sk-test",
+                "BAILIAN_USER_ID": "test-user",
+                "BAILIAN_AUTO_CAPTURE": "false",
+            },
         ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
@@ -143,7 +191,10 @@ class TestBailianMemoryProvider:
 
     def test_sync_turn_queues_messages(self) -> None:
         """Test sync_turn queues messages for batch write."""
-        with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "test-user"},
+        ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
             provider.sync_turn("user msg", "assistant msg")
@@ -152,7 +203,10 @@ class TestBailianMemoryProvider:
 
     def test_shutdown_flushes_pending(self) -> None:
         """Test shutdown flushes pending turns."""
-        with mock.patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-test"}):
+        with mock.patch.dict(
+            os.environ,
+            {"DASHSCOPE_API_KEY": "sk-test", "BAILIAN_USER_ID": "test-user"},
+        ):
             provider = bailian.BailianMemoryProvider()
             provider.initialize("session-123")
             provider._pending_turns.append({"user": "u", "assistant": "a"})
