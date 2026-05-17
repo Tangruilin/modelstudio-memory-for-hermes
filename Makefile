@@ -1,4 +1,4 @@
-.PHONY: install sync mypy-check pyright-check ruff-check format check test
+.PHONY: install sync mypy-check pyright-check ruff-check pylint-check format check test
 
 # 安装依赖
 install:
@@ -24,8 +24,12 @@ pyright-check:
 ruff-check:
 	uv run ruff check plugins/ tests/
 
+# pylint 检查（禁用测试中合理的警告）
+pylint-check:
+	uv run pylint plugins/ tests/ --disable=W0212,R0902,R0903
+
 # 运行所有检查
-check: ruff-check mypy-check
+check: ruff-check mypy-check pylint-check
 
 # 运行测试
 test:

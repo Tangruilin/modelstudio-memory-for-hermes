@@ -11,7 +11,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional
+import pathlib
+from typing import Any, cast
 
 import requests
 
@@ -40,15 +41,15 @@ class BailianMemoryProvider:
 
     def __init__(self) -> None:
         """Initialize provider with default state."""
-        self._api_key: Optional[str] = None
+        self._api_key: str | None = None
         self._base_url: str = BASE_URL
-        self._user_id: Optional[str] = None
+        self._user_id: str | None = None
         self._session_id: str = ""
         self._auto_capture: bool = True
         self._auto_recall: bool = True
         self._top_k: int = 5
         self._min_score: float = 0.0
-        self._pending_turns: List[Dict[str, str]] = []
+        self._pending_turns: list[dict[str, str]] = []
 
     @property
     def name(self) -> str:
@@ -63,7 +64,7 @@ class BailianMemoryProvider:
         """
         return os.environ.get("DASHSCOPE_API_KEY") is not None
 
-    def initialize(self, session_id: str, **kwargs) -> None:
+    def initialize(self, session_id: str, **kwargs: Any) -> None:
         """Initialize provider for a session.
 
         Args:
@@ -109,7 +110,7 @@ class BailianMemoryProvider:
             )
 
         logger.info(
-            f"BailianMemoryProvider initialized for user={self._user_id}"
+            "BailianMemoryProvider initialized for user=%s", self._user_id
         )
 
     def system_prompt_block(self) -> str:
@@ -126,7 +127,7 @@ You have access to Bailian long-term memory. Use these tools to:
 - Delete outdated or incorrect memories
 """
 
-    def prefetch(self, query: str, *, session_id: str = "") -> str:
+    def prefetch(self, query: str, *, _session_id: str = "") -> str:
         """Recall relevant context for the upcoming turn.
 
         Args:
@@ -150,11 +151,13 @@ You have access to Bailian long-term memory. Use these tools to:
                 score = mem.get("score", 0)
                 formatted += f"- {content} (relevance: {score:.2f})\n"
             return formatted
-        except Exception as e:
-            logger.warning(f"Prefetch failed: {e}")
+        except requests.RequestException as e:
+            logger.warning("Prefetch failed: %s", e)
             return ""
 
-    def sync_turn(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:
+    def sync_turn(
+        self, user_content: str, assistant_content: str, *, _session_id: str = ""
+    ) -> None:
         """Persist a completed turn to memory.
 
         Args:
@@ -180,7 +183,7 @@ You have access to Bailian long-term memory. Use these tools to:
         if not self._pending_turns:
             return
 
-        messages = []
+        messages: list[dict[str, str]] = []
         for turn in self._pending_turns:
             messages.append({"role": "user", "content": turn["user"]})
             messages.append({"role": "assistant", "content": turn["assistant"]})
@@ -188,11 +191,11 @@ You have access to Bailian long-term memory. Use these tools to:
         try:
             self._add_memory(messages)
             self._pending_turns.clear()
-            logger.debug(f"Flushed {len(messages)} messages to Bailian")
-        except Exception as e:
-            logger.warning(f"Failed to flush turns: {e}")
+            logger.debug("Flushed %d messages to Bailian", len(messages))
+        except requests.RequestException as e:
+            logger.warning("Failed to flush turns: %s", e)
 
-    def get_tool_schemas(self) -> List[Dict[str, Any]]:
+    def get_tool_schemas(self) -> list[dict[str, Any]]:
         """Return tool schemas for Bailian memory operations.
 
         Returns:
@@ -203,13 +206,19 @@ You have access to Bailian long-term memory. Use these tools to:
                 "type": "function",
                 "function": {
                     "name": "bailian_add_memory",
-                    "description": "Store a memory to Bailian long-term memory. Use this to remember important facts about the user, preferences, or context for future sessions.",
+                    "description": (
+                        "Store a memory to Bailian long-term memory. "
+                        "Use this to remember important facts about the user, "
+                        "preferences, or context for future sessions."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "content": {
                                 "type": "string",
-                                "description": "The memory content to store. Be specific and factual."
+                                "description": (
+                                    "The memory content to store. Be specific and factual."
+                                )
                             },
                         },
                         "required": ["content"],
@@ -220,7 +229,10 @@ You have access to Bailian long-term memory. Use these tools to:
                 "type": "function",
                 "function": {
                     "name": "bailian_search_memory",
-                    "description": "Search Bailian long-term memory for relevant past memories. Use this to recall facts about the user or past context.",
+                    "description": (
+                        "Search Bailian long-term memory for relevant past memories. "
+                        "Use this to recall facts about the user or past context."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -247,7 +259,10 @@ You have access to Bailian long-term memory. Use these tools to:
                 "type": "function",
                 "function": {
                     "name": "bailian_list_memories",
-                    "description": "List all stored memories for the current user. Use this to see what information is currently remembered.",
+                    "description": (
+                        "List all stored memories for the current user. "
+                        "Use this to see what information is currently remembered."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {},
@@ -259,7 +274,10 @@ You have access to Bailian long-term memory. Use these tools to:
                 "type": "function",
                 "function": {
                     "name": "bailian_delete_memory",
-                    "description": "Delete a specific memory by ID. Use this to remove outdated or incorrect information.",
+                    "description": (
+                        "Delete a specific memory by ID. "
+                        "Use this to remove outdated or incorrect information."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -274,7 +292,7 @@ You have access to Bailian long-term memory. Use these tools to:
             },
         ]
 
-    def handle_tool_call(self, tool_name: str, args: Dict[str, Any], **kwargs) -> str:
+    def handle_tool_call(self, tool_name: str, args: dict[str, Any], **_kwargs: Any) -> str:
         """Handle a tool call for Bailian memory operations.
 
         Args:
@@ -302,10 +320,11 @@ You have access to Bailian long-term memory. Use these tools to:
         try:
             result = handler(args)
             return json.dumps(result, ensure_ascii=False)
-        except Exception as e:
+        except (requests.RequestException, ValueError, KeyError) as e:
+            # API boundary: gracefully handle network, validation, and key errors
             return json.dumps({"error": str(e)}, ensure_ascii=False)
 
-    def _handle_add_memory(self, args: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_add_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         """Handle bailian_add_memory tool call."""
         content = args.get("content", "")
         if not content:
@@ -314,7 +333,7 @@ You have access to Bailian long-term memory. Use these tools to:
         messages = [{"role": "user", "content": content}]
         return self._add_memory(messages)
 
-    def _handle_search_memory(self, args: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_search_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         """Handle bailian_search_memory tool call."""
         query = args.get("query", "")
         top_k = args.get("top_k", self._top_k)
@@ -326,12 +345,12 @@ You have access to Bailian long-term memory. Use these tools to:
         results = self._search_memory(query, top_k=top_k, min_score=min_score)
         return {"memories": results, "count": len(results)}
 
-    def _handle_list_memories(self, args: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_list_memories(self, _args: dict[str, Any]) -> dict[str, Any]:
         """Handle bailian_list_memories tool call."""
         memories = self._list_memories()
         return {"memories": memories, "count": len(memories)}
 
-    def _handle_delete_memory(self, args: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_delete_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         """Handle bailian_delete_memory tool call."""
         memory_id = args.get("memory_id", "")
         if not memory_id:
@@ -345,8 +364,8 @@ You have access to Bailian long-term memory. Use these tools to:
         self,
         method: str,
         path: str,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make an HTTP request to Bailian API.
 
         Args:
@@ -375,9 +394,9 @@ You have access to Bailian long-term memory. Use these tools to:
         )
 
         response.raise_for_status()
-        return response.json()
+        return cast(dict[str, Any], response.json())
 
-    def _add_memory(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    def _add_memory(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         """Add memory to Bailian.
 
         Args:
@@ -397,7 +416,7 @@ You have access to Bailian long-term memory. Use these tools to:
         query: str,
         top_k: int = 5,
         min_score: float = 0.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search Bailian memory.
 
         Args:
@@ -415,16 +434,14 @@ You have access to Bailian long-term memory. Use these tools to:
             "min_score": min_score,
         }
         response = self._make_request("POST", "/memory_nodes/search", data=payload)
-        return response.get("memory_nodes", [])
+        return cast(list[dict[str, Any]], response.get("memory_nodes", []))
 
-    def _list_memories(self) -> List[Dict[str, Any]]:
+    def _list_memories(self) -> list[dict[str, Any]]:
         """List all memories for the user.
 
         Returns:
             List of memory dicts.
         """
-        params = {"user_id": self._user_id}
-        # Bailian uses query params for GET
         url = f"{self._base_url}/memory_nodes?user_id={self._user_id}"
         headers = {
             "Authorization": f"Bearer {self._api_key}",
@@ -432,9 +449,10 @@ You have access to Bailian long-term memory. Use these tools to:
 
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        return response.json().get("memory_nodes", [])
+        data = cast(dict[str, Any], response.json())
+        return cast(list[dict[str, Any]], data.get("memory_nodes", []))
 
-    def _delete_memory(self, memory_id: str) -> Dict[str, Any]:
+    def _delete_memory(self, memory_id: str) -> dict[str, Any]:
         """Delete a memory by ID.
 
         Args:
@@ -462,9 +480,9 @@ You have access to Bailian long-term memory. Use these tools to:
         self,
         new_session_id: str,
         *,
-        parent_session_id: str = "",
+        _parent_session_id: str = "",
         reset: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Handle session ID switch mid-process.
 
@@ -483,7 +501,7 @@ You have access to Bailian long-term memory. Use these tools to:
 
         self._session_id = new_session_id
 
-    def on_session_end(self, messages: List[Dict[str, Any]]) -> None:
+    def on_session_end(self, _messages: list[dict[str, Any]]) -> None:
         """Handle session end - flush pending memories.
 
         Args:
@@ -491,7 +509,7 @@ You have access to Bailian long-term memory. Use these tools to:
         """
         self._flush_pending_turns()
 
-    def get_config_schema(self) -> List[Dict[str, Any]]:
+    def get_config_schema(self) -> list[dict[str, Any]]:
         """Return config fields for 'hermes memory setup'.
 
         Returns:
@@ -543,15 +561,13 @@ You have access to Bailian long-term memory. Use these tools to:
             },
         ]
 
-    def save_config(self, values: Dict[str, Any], hermes_home: str) -> None:
+    def save_config(self, values: dict[str, Any], hermes_home: str) -> None:
         """Write non-secret config to provider config file.
 
         Args:
             values: Non-secret config values.
             hermes_home: Active HERMES_HOME directory path.
         """
-        import pathlib
-
         config_path = pathlib.Path(hermes_home) / "memory" / "bailian.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -564,10 +580,10 @@ You have access to Bailian long-term memory. Use these tools to:
             "min_score": values.get("min_score", 0.0),
         }
 
-        with open(config_path, "w") as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
 
-        logger.info(f"Bailian config saved to {config_path}")
+        logger.info("Bailian config saved to %s", config_path)
 
 
 def register() -> BailianMemoryProvider:
