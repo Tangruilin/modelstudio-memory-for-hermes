@@ -573,7 +573,15 @@ You have access to Bailian long-term memory. Use these tools to:
         if isinstance(user_id, str):
             user_id = user_id.strip()
         if not user_id:
-            raise ValueError("user_id is required — please provide a user identifier")
+            raise ValueError(
+                "\n\n"
+                "╔════════════════════════════════════════════════════════╗\n"
+                "║  ERROR: user_id is required                            ║\n"
+                "║                                                        ║\n"
+                "║  Please provide a unique user identifier for memory    ║\n"
+                "║  isolation. This cannot be empty.                      ║\n"
+                "╚════════════════════════════════════════════════════════╝\n"
+            )
 
         # Write config values with proper type coercion
         auto_capture = values.get("auto_capture", True)

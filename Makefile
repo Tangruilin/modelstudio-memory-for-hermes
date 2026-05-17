@@ -10,23 +10,23 @@ sync:
 
 # 格式化代码
 format:
-	uv run ruff format bailian.py tests/
+	uv run ruff format __init__.py tests/
 
-# mypy 类型检查（使用 stubs）
+# mypy 类型检查
 mypy-check:
-	uv run mypy bailian.py tests/
+	MYPYPATH=~/.hermes/hermes-agent uv run mypy tests/
 
-# pyright 类型检查（使用 stubs）
+# pyright 类型检查
 pyright-check:
-	npx pyright bailian.py
+	npx pyright __init__.py
 
 # ruff lint 检查
 ruff-check:
-	uv run ruff check bailian.py tests/
+	uv run ruff check __init__.py tests/
 
 # pylint 检查（运行时需要 hermes-agent）
 pylint-check:
-	PYTHONPATH=~/.hermes/hermes-agent uv run pylint bailian.py tests/ --disable=W0212,R0902,R0903
+	PYTHONPATH=~/.hermes/hermes-agent uv run pylint __init__.py tests/ --disable=W0212,R0902,R0903,C0103
 
 # 运行所有检查
 check: ruff-check mypy-check pylint-check
