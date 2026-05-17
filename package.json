@@ -2,11 +2,16 @@
   "name": "modelstudio-memory-for-hermes",
   "version": "0.1.0",
   "description": "Hermes Agent memory plugin for Alibaba Cloud Bailian long-term memory service",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
   "keywords": ["hermes-agent", "plugin", "memory", "bailian", "alibaba-cloud"],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
 }
