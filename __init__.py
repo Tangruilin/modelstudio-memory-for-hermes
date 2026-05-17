@@ -16,12 +16,17 @@ from typing import Any, cast
 
 import requests
 
+try:
+    from agent.memory_provider import MemoryProvider
+except ImportError:
+    MemoryProvider = object  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://dashscope.aliyuncs.com/api/v2/apps/memory"
 
 
-class BailianMemoryProvider:
+class BailianMemoryProvider(MemoryProvider):
     """Memory provider for Alibaba Cloud Bailian service.
 
     Implements the MemoryProvider ABC from hermes-agent, exposing
@@ -586,10 +591,10 @@ You have access to Bailian long-term memory. Use these tools to:
         logger.info("Bailian config saved to %s", config_path)
 
 
-def register() -> BailianMemoryProvider:
+def register(ctx):
     """Register function for Hermes plugin discovery.
 
-    Returns:
-        BailianMemoryProvider instance.
+    Called by Hermes plugin loader with a context that has
+    register_memory_provider() method.
     """
-    return BailianMemoryProvider()
+    ctx.register_memory_provider(BailianMemoryProvider())
