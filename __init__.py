@@ -569,6 +569,12 @@ You have access to Bailian long-term memory. Use these tools to:
         config_path = pathlib.Path(hermes_home) / "memory" / "bailian.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
+        user_id = values.get("user_id", "")
+        if isinstance(user_id, str):
+            user_id = user_id.strip()
+        if not user_id:
+            raise ValueError("user_id is required — please provide a user identifier")
+
         # Write config values with proper type coercion
         auto_capture = values.get("auto_capture", True)
         if isinstance(auto_capture, str):
