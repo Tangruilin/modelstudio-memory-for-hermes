@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from plugins.memory.bailian import BailianMemoryProvider, register
+from bailian import BailianMemoryProvider, register
 
 
 class TestBailianMemoryProvider:
@@ -161,8 +161,11 @@ class TestBailianMemoryProvider:
                 mock_flush.assert_called_once()
 
     def test_register_function(self) -> None:
-        """Test register() returns BailianMemoryProvider."""
-        provider = register()
+        """Test register() properly registers BailianMemoryProvider."""
+        mock_ctx = mock.Mock()
+        register(mock_ctx)
+        mock_ctx.register_memory_provider.assert_called_once()
+        provider = mock_ctx.register_memory_provider.call_args[0][0]
         assert isinstance(provider, BailianMemoryProvider)
 
 

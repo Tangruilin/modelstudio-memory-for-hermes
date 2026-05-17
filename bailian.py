@@ -15,7 +15,6 @@ import pathlib
 from typing import Any, cast
 
 import requests
-
 from agent.memory_provider import MemoryProvider
 
 logger = logging.getLogger(__name__)
@@ -129,7 +128,7 @@ You have access to Bailian long-term memory. Use these tools to:
 - Delete outdated or incorrect memories
 """
 
-    def prefetch(self, query: str, *, _session_id: str = "") -> str:
+    def prefetch(self, query: str, *, session_id: str = "") -> str:
         """Recall relevant context for the upcoming turn.
 
         Args:
@@ -157,9 +156,7 @@ You have access to Bailian long-term memory. Use these tools to:
             logger.warning("Prefetch failed: %s", e)
             return ""
 
-    def sync_turn(
-        self, user_content: str, assistant_content: str, *, _session_id: str = ""
-    ) -> None:
+    def sync_turn(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:
         """Persist a completed turn to memory.
 
         Args:
@@ -503,7 +500,7 @@ You have access to Bailian long-term memory. Use these tools to:
 
         self._session_id = new_session_id
 
-    def on_session_end(self, _messages: list[dict[str, Any]]) -> None:
+    def on_session_end(self, messages: list[dict[str, Any]]) -> None:
         """Handle session end - flush pending memories.
 
         Args:
@@ -528,10 +525,9 @@ You have access to Bailian long-term memory. Use these tools to:
             },
             {
                 "key": "user_id",
-                "description": "User identifier for memory storage. Defaults to session-based ID.",
+                "description": "User ID for memory isolation",
                 "secret": False,
-                "required": False,
-                "default": "",
+                "required": True,
             },
             {
                 "key": "auto_capture",
@@ -601,7 +597,7 @@ You have access to Bailian long-term memory. Use these tools to:
         logger.info("Bailian config saved to %s", config_path)
 
 
-def register(ctx):
+def register(ctx: Any) -> None:
     """Register function for Hermes plugin discovery.
 
     Called by Hermes plugin loader with a context that has

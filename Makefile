@@ -1,7 +1,4 @@
-.PHONY: install sync mypy-check pyright-check ruff-check format check test
-
-HERMES_SRC := /Users/reilly/.hermes/hermes-agent
-export PYTHONPATH := $(HERMES_SRC):$(PYTHONPATH)
+.PHONY: install sync mypy-check pyright-check ruff-check pylint-check format check test
 
 # 安装依赖
 install:
@@ -13,27 +10,27 @@ sync:
 
 # 格式化代码
 format:
-	uv run ruff format plugins/ tests/
+	uv run ruff format bailian.py tests/
 
-# mypy 类型检查
+# mypy 类型检查（使用 stubs）
 mypy-check:
-	uv run mypy plugins/ tests/
+	uv run mypy bailian.py tests/
 
-# pyright 类型检查
+# pyright 类型检查（使用 stubs）
 pyright-check:
-	npx pyright /Users/reilly/GithubProject/Python/modelstudio-memory-for-hermes/plugins/
+	npx pyright bailian.py
 
 # ruff lint 检查
 ruff-check:
-	uv run ruff check plugins/ tests/
+	uv run ruff check bailian.py tests/
 
-# pylint 检查（禁用测试中合理的警告）
+# pylint 检查（运行时需要 hermes-agent）
 pylint-check:
-	uv run pylint plugins/ tests/ --disable=W0212,R0902,R0903
+	PYTHONPATH=~/.hermes/hermes-agent uv run pylint bailian.py tests/ --disable=W0212,R0902,R0903
 
 # 运行所有检查
 check: ruff-check mypy-check pylint-check
 
-# 运行测试
+# 运行测试（运行时需要 hermes-agent）
 test:
-	uv run pytest tests/ -v
+	PYTHONPATH=~/.hermes/hermes-agent uv run pytest tests/ -v
